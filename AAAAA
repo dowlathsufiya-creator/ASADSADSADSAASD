@@ -1,0 +1,63 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# -----------------------------
+# 1. Load Sun spectrum data
+# -----------------------------
+data = np.loadtxt("Sun_Spectrum_data.txt")
+wavelength = data[:, 0]         # in nm
+flux = data[:, 1]
+
+# -----------------------------
+# 2. Planck Blackbody Function
+# -----------------------------
+def planck(wavelength_nm, T):
+    h = 6.626e-34      # Planck constant
+    c = 3e8            # speed of light
+    k = 1.381e-23      # Boltzmann constant
+    
+    wl = wavelength_nm * 1e-9  # convert to meters
+    B = (2*h*c**2) / (wl**5) / (np.exp(h*c/(wl*k*T)) - 1)
+    return B / max(B)          # normalize so curve fits the plot
+
+# Blackbody curve for Sun (T = 5778 K)
+bb_curve = planck(wavelength, 5778)
+
+# -----------------------------
+# 3. Load spectral line list
+# -----------------------------
+elements = []
+line_wl = []
+
+with open("sun_lines.txt") as f:
+    next(f)      # skip header
+    for line in f:
+        parts = line.split()
+        elements.append(parts[0])
+        line_wl.append(float(parts[1]))
+
+# -----------------------------
+# 4. Plot the result
+# -----------------------------
+plt.figure(figsize=(12, 6))
+
+# Sun spectrum
+plt.plot(wavelength, flux, label="Sun Spectrum", linewidth=1.2)
+
+# Blackbody curve
+plt.plot(wavelength, bb_curve * max(flux), '--', label="Blackbody (5778 K)")
+
+# Spectral lines as dots
+for elem, wl in zip(elements, line_wl):
+    # Find flux near the line for dot placement
+    idx = (np.abs(wavelength - wl)).argmin()
+    plt.scatter(wl, flux[idx], s=40)
+    plt.text(wl, flux[idx] + 0.05, elem, rotation=90, fontsize=8)
+
+plt.xlabel("Wavelength (nm)")
+plt.ylabel("Flux")
+plt.title("Sun Spectrum with Blackbody Curve and Element Lines")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
